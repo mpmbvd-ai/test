@@ -64,6 +64,12 @@ Located in `TableauMigrationExample/Examples/`
 - Production-ready structure
 - Manifest inspection (see what was migrated)
 
+**6_CSVBasedUserMapping.cs** ⭐ **PRODUCTION APPROACH**
+- Load mappings from CSV file (THE practical way)
+- Export helper to create CSV template
+- No code changes to update mappings
+- Easy team review in Excel/Google Sheets
+
 **Examples/README.md**
 - Detailed guide to all examples
 - How subscriptions work with mapping
@@ -92,6 +98,12 @@ Located in `TableauMigrationExample/Examples/`
 - Focused on one content type (subscriptions)
 - Clear, isolated examples
 - No GUI complexity to start
+
+✅ **"CSV mappings 95% of the time"**
+- Example 6 shows CSV-based mapping (production-ready)
+- CSV_MAPPING_WORKFLOW.md has complete guide
+- Export → Edit in Excel → Use in migration
+- Sample template included (user_mappings_template.csv)
 
 ---
 

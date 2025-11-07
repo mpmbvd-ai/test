@@ -7,4 +7,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Tableau Migration SDK - Install with: dotnet add package Tableau.Migration -->
+    <!-- <PackageReference Include="Tableau.Migration" Version="*" /> -->
+
+    <!-- CSV Helper for reading mapping files - Install with: dotnet add package CsvHelper -->
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
+  </ItemGroup>
+
 </Project>

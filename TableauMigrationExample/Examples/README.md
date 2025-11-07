@@ -84,6 +84,34 @@ This folder contains progressively complex examples showing how to use the Table
 
 ---
 
+### 6. CSVBasedUserMapping.cs ⭐ **RECOMMENDED FOR PRODUCTION**
+**What it shows:** Load user mappings from a CSV file (the practical approach)
+
+**Key concepts:**
+- Read mappings from CSV instead of hardcoding
+- Easy to review and edit in Excel/Google Sheets
+- Helper to export Server users to CSV template
+- Team collaboration on mapping rules
+- Version control for mapping files
+
+**Real-world use case:**
+- Export 150 users from Server
+- Create CSV: `ServerUsername,CloudEmail`
+- Team reviews and fixes mappings
+- Load CSV in migration code
+- SDK handles everything else
+
+**Why this is best:**
+- ✅ No code changes needed to update mappings
+- ✅ Easy for non-developers to review
+- ✅ Can be reviewed/approved before migration
+- ✅ Reusable for future migrations
+- ✅ Auditable record of what was mapped
+
+**See also:** `CSV_MAPPING_WORKFLOW.md` for complete workflow guide
+
+---
+
 ## How Subscriptions Work in These Examples
 
 ### What Gets Migrated Automatically:
