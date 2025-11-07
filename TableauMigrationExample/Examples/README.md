@@ -50,7 +50,23 @@ This folder contains progressively complex examples showing how to use the Table
 
 ---
 
-### 4. CompleteSubscriptionMigration.cs
+### 4. UsernameToEmailMapping.cs ⭐ **MOST COMMON SCENARIO**
+**What it shows:** Converting Server usernames to Cloud email addresses
+
+**Key concepts:**
+- Simple username to email conversion (jsmith → john.smith@company.com)
+- Lookup table for abbreviated/special usernames
+- Mixed format handling (some emails, some not)
+- This is THE most common Cloud migration scenario
+
+**Real-world use case:**
+- Server uses simple usernames: "jsmith", "alice.jones", "admin"
+- Cloud requires emails: "john.smith@company.com", "alice.jones@company.com"
+- Critical for subscriptions to work!
+
+---
+
+### 5. CompleteSubscriptionMigration.cs
 **What it shows:** Everything together - a production-ready example
 
 **Key concepts:**

@@ -27,6 +27,12 @@ I've created a complete learning path for using the Tableau Migration SDK, focus
 - Why mapping is critical for subscriptions
 - The "pipeline" concept (Filter → Map → Transform → Hooks)
 
+**USER_MAPPING_PATTERNS.md** ⭐ **ESSENTIAL FOR CLOUD**
+- Username to email conversion patterns
+- 5 common scenarios with code examples
+- Building your mapping strategy
+- Troubleshooting guide
+
 ### 2. Code Examples
 
 Located in `TableauMigrationExample/Examples/`
@@ -41,12 +47,18 @@ Located in `TableauMigrationExample/Examples/`
 - Dictionary-based mapping rules
 - Real scenario: "Campaign Analytics" → "Marketing - Campaigns"
 
-**3_UserMappingForSubscriptions.cs** ⭐ **KEY FILE**
+**3_UserMappingForSubscriptions.cs**
 - Email domain mapping (bulk changes)
 - Specific user mappings (individual overrides)
 - Why this is critical for subscriptions
 
-**4_CompleteSubscriptionMigration.cs** ⭐ **COMPLETE EXAMPLE**
+**4_UsernameToEmailMapping.cs** ⭐ **MOST COMMON SCENARIO**
+- Converting Server usernames to Cloud emails
+- "jsmith" → "john.smith@company.com"
+- Lookup tables for abbreviated usernames
+- Critical for subscriptions to work!
+
+**5_CompleteSubscriptionMigration.cs** ⭐ **COMPLETE EXAMPLE**
 - Everything together: projects + users + subscriptions
 - Filtering test content
 - Production-ready structure
