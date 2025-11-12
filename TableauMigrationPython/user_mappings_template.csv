@@ -1,0 +1,8 @@
+ServerUsername,CloudEmail,Notes
+jsmith,john.smith@company.com,Sales Manager - abbreviated username
+ajones,alice.jones@company.com,Marketing Director - abbreviated username
+bob.wilson,bob.wilson@company.com,Finance - already full name
+admin,admin.tableau@company.com,Admin account - special email
+service_account,svc.tableau@company.com,Service account for scheduled extracts
+sarah.parker,sarah.parker@company.com,HR - standard format
+mthompson,mary.thompson@company.com,IT - abbreviated username

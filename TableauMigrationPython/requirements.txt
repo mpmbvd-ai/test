@@ -1,0 +1,13 @@
+# Tableau Migration SDK - Python
+# Install with: pip install -r requirements.txt
+
+# Core Tableau Migration SDK
+tableau-migration
+
+# No additional dependencies needed!
+# The SDK includes everything you need for migrations.
+# Python's built-in csv module is used for CSV parsing.
+
+# Optional: For enhanced CSV handling with pandas
+# Uncomment if you want to use pandas for complex CSV operations
+# pandas>=2.0.0
