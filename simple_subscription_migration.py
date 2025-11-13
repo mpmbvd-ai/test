@@ -4,11 +4,7 @@ Just migrates subscriptions from Server to Cloud with user mapping.
 """
 
 import asyncio
-from tableau_migration import (
-    IUser,
-    MigrationPlanBuilder,
-    ContentMappingContext
-)
+from tableau_migration import MigrationPlanBuilder
 
 
 # =============================================================================
@@ -17,7 +13,7 @@ from tableau_migration import (
 
 # SOURCE: Tableau Server
 SOURCE_SERVER_URL = "https://your-tableau-server.com"
-SOURCE_SITE = "your-site-name"  # or "" for default site
+SOURCE_SITE = ""  # Empty string for default site, or "site-name"
 SOURCE_TOKEN_NAME = "your-token-name"
 SOURCE_TOKEN = "your-token-secret"
 
@@ -28,39 +24,48 @@ DEST_TOKEN_NAME = "your-cloud-token-name"
 DEST_TOKEN = "your-cloud-token-secret"
 
 # USER MAPPINGS - Server username → Cloud email
+# If Server username is not in this dict, it will append @DOMAIN
 USER_MAPPINGS = {
     "jsmith": "john.smith@company.com",
     "ajones": "alice.jones@company.com",
     # Add more users here...
 }
 
-# Default domain for unmapped users
-DEFAULT_DOMAIN = "@company.com"
+# Email domain to append for users not in USER_MAPPINGS
+EMAIL_DOMAIN = "@company.com"
 
 
 # =============================================================================
-# USER MAPPING FUNCTION
+# CUSTOM USERNAME MAPPING
 # =============================================================================
 
-def map_user(ctx: ContentMappingContext[IUser]) -> ContentMappingContext[IUser]:
+class CustomUsernameMapping:
     """Maps Server usernames to Cloud emails."""
 
-    username = ctx.content_item.name
+    def __call__(self, username):
+        """
+        Called for each username during migration.
 
-    # Already an email? Keep it
-    if "@" in username:
-        return ctx
+        Args:
+            username: The Server username
 
-    # Check mapping dict
-    if username in USER_MAPPINGS:
-        email = USER_MAPPINGS[username]
-        print(f"👤 Mapping: {username} → {email}")
-        return ctx.map_to(ctx.content_item.location.with_username(email))
+        Returns:
+            The Cloud email address
+        """
+        # Already an email? Return as-is
+        if "@" in username:
+            return username
 
-    # Default: append domain
-    email = f"{username}{DEFAULT_DOMAIN}"
-    print(f"👤 Default: {username} → {email}")
-    return ctx.map_to(ctx.content_item.location.with_username(email))
+        # Check mapping dict
+        if username in USER_MAPPINGS:
+            email = USER_MAPPINGS[username]
+            print(f"👤 Mapping: {username} → {email}")
+            return email
+
+        # Default: append domain
+        email = f"{username}{EMAIL_DOMAIN}"
+        print(f"👤 Default: {username} → {email}")
+        return email
 
 
 # =============================================================================
@@ -71,7 +76,7 @@ async def migrate_subscriptions():
     """Migrate subscriptions from Server to Cloud."""
 
     print("Starting subscription migration...")
-    print(f"Source: {SOURCE_SERVER_URL} / {SOURCE_SITE}")
+    print(f"Source: {SOURCE_SERVER_URL} / {SOURCE_SITE if SOURCE_SITE else 'Default'}")
     print(f"Destination: {DEST_CLOUD_URL} / {DEST_SITE}\n")
 
     # Build plan
@@ -91,13 +96,15 @@ async def migrate_subscriptions():
             access_token_name=DEST_TOKEN_NAME,
             access_token=DEST_TOKEN
         )
+        # Use built-in Cloud username mapping with custom logic
+        .with_tableau_cloud_usernames(CustomUsernameMapping())
     )
 
-    # Add user mapping
-    plan_builder.mappings.add(map_user, IUser)
-
     # Execute
+    print("Building migration plan...")
     plan = plan_builder.build()
+
+    print("Starting migration (this may take a while)...\n")
     result = await plan.execute_async()
 
     # Results
