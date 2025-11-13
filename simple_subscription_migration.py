@@ -60,14 +60,14 @@ class SimpleUsernameMapping(TableauCloudUsernameMappingBase):
         if "@" in username:
             return ctx
 
-        # Check mapping dict
-        if username in USER_MAPPINGS:
-            email = USER_MAPPINGS[username]
+        # Check mapping dict (access global)
+        if username in globals()['USER_MAPPINGS']:
+            email = globals()['USER_MAPPINGS'][username]
             print(f"👤 Mapping: {username} → {email}")
             return ctx.map_to(email)
 
-        # Default: append domain
-        email = f"{username}{EMAIL_DOMAIN}"
+        # Default: append domain (access global)
+        email = f"{username}{globals()['EMAIL_DOMAIN']}"
         print(f"👤 Default: {username} → {email}")
         return ctx.map_to(email)
 
