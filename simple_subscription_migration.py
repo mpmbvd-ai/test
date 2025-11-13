@@ -6,7 +6,8 @@ Just migrates subscriptions from Server to Cloud with user mapping.
 from tableau_migration import (
     Migrator,
     MigrationPlanBuilder,
-    TableauCloudUsernameMappingBase
+    TableauCloudUsernameMappingBase,
+    ContentLocation
 )
 
 
@@ -64,14 +65,16 @@ class SimpleUsernameMapping(TableauCloudUsernameMappingBase):
         if username in globals()['USER_MAPPINGS']:
             email = globals()['USER_MAPPINGS'][username]
             print(f"👤 Mapping: {username} → {email}")
-            # Return mapped email directly
-            return ctx.map_to(email)
+            # Create new ContentLocation with just the email
+            new_location = ContentLocation([email])
+            return ctx.map_to(new_location)
 
         # Default: append domain (access global)
         email = f"{username}{globals()['DEFAULT_DOMAIN']}"
         print(f"👤 Default: {username} → {email}")
-        # Return mapped email directly
-        return ctx.map_to(email)
+        # Create new ContentLocation with just the email
+        new_location = ContentLocation([email])
+        return ctx.map_to(new_location)
 
 
 # =============================================================================
