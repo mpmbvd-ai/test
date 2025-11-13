@@ -39,29 +39,28 @@ DEFAULT_DOMAIN = "@company.com"
 
 
 # =============================================================================
-# USER MAPPING CLASS
+# USER MAPPING FUNCTION
 # =============================================================================
 
-class SimpleUserMapping:
+def map_user(ctx: ContentMappingContext[IUser]) -> ContentMappingContext[IUser]:
     """Maps Server usernames to Cloud emails."""
 
-    def map_user(self, ctx: ContentMappingContext[IUser]) -> ContentMappingContext[IUser]:
-        username = ctx.content_item.name
+    username = ctx.content_item.name
 
-        # Already an email? Keep it
-        if "@" in username:
-            return ctx
+    # Already an email? Keep it
+    if "@" in username:
+        return ctx
 
-        # Check mapping dict
-        if username in USER_MAPPINGS:
-            email = USER_MAPPINGS[username]
-            print(f"👤 Mapping: {username} → {email}")
-            return ctx.map_to(ctx.content_item.location.with_username(email))
-
-        # Default: append domain
-        email = f"{username}{DEFAULT_DOMAIN}"
-        print(f"👤 Default: {username} → {email}")
+    # Check mapping dict
+    if username in USER_MAPPINGS:
+        email = USER_MAPPINGS[username]
+        print(f"👤 Mapping: {username} → {email}")
         return ctx.map_to(ctx.content_item.location.with_username(email))
+
+    # Default: append domain
+    email = f"{username}{DEFAULT_DOMAIN}"
+    print(f"👤 Default: {username} → {email}")
+    return ctx.map_to(ctx.content_item.location.with_username(email))
 
 
 # =============================================================================
@@ -95,8 +94,7 @@ async def migrate_subscriptions():
     )
 
     # Add user mapping
-    user_mapper = SimpleUserMapping()
-    plan_builder.mappings.add(user_mapper.map_user)
+    plan_builder.mappings.add(map_user, IUser)
 
     # Execute
     plan = plan_builder.build()
