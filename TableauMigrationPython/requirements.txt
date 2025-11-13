@@ -4,9 +4,10 @@
 # Core Tableau Migration SDK
 tableau-migration
 
-# No additional dependencies needed!
-# The SDK includes everything you need for migrations.
-# Python's built-in csv module is used for CSV parsing.
+# Credential Management
+python-dotenv>=1.0.0
+
+# Python's built-in csv module is used for CSV parsing (no extra deps needed)
 
 # Optional: For enhanced CSV handling with pandas
 # Uncomment if you want to use pandas for complex CSV operations
