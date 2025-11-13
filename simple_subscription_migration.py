@@ -4,9 +4,11 @@ Just migrates subscriptions from Server to Cloud with user mapping.
 """
 
 import asyncio
-from tableau_migration import PyUser
-from tableau_migration.migration import PyMigrationPlanBuilder
-from tableau_migration.migration_engine_hooks_mappings import PyContentMappingContext
+from tableau_migration import (
+    IUser,
+    MigrationPlanBuilder,
+    ContentMappingContext
+)
 
 
 # =============================================================================
@@ -43,7 +45,7 @@ DEFAULT_DOMAIN = "@company.com"
 class SimpleUserMapping:
     """Maps Server usernames to Cloud emails."""
 
-    def map(self, ctx: PyContentMappingContext[PyUser]) -> PyContentMappingContext[PyUser]:
+    def map_user(self, ctx: ContentMappingContext[IUser]) -> ContentMappingContext[IUser]:
         username = ctx.content_item.name
 
         # Already an email? Keep it
@@ -74,7 +76,7 @@ async def migrate_subscriptions():
     print(f"Destination: {DEST_CLOUD_URL} / {DEST_SITE}\n")
 
     # Build plan
-    plan_builder = PyMigrationPlanBuilder()
+    plan_builder = MigrationPlanBuilder()
 
     plan_builder = (
         plan_builder
@@ -93,7 +95,8 @@ async def migrate_subscriptions():
     )
 
     # Add user mapping
-    plan_builder.mappings.add(SimpleUserMapping())
+    user_mapper = SimpleUserMapping()
+    plan_builder.mappings.add(user_mapper.map_user)
 
     # Execute
     plan = plan_builder.build()
@@ -101,14 +104,14 @@ async def migrate_subscriptions():
 
     # Results
     print("\n" + "="*50)
-    if result.status == "Completed":
+    if result.status.value == "Completed":
         print("✅ Migration completed!")
-        manifest = result.manifest
-        print(f"   Subscriptions: {len(manifest.entries.get_by_type('Subscription'))}")
+        print(f"   Check your Cloud site for migrated subscriptions")
     else:
         print(f"❌ Migration failed: {result.status}")
-        for error in result.errors:
-            print(f"   {error}")
+        if hasattr(result, 'errors') and result.errors:
+            for error in result.errors:
+                print(f"   {error}")
     print("="*50)
 
 
