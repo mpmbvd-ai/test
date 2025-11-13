@@ -6,8 +6,7 @@ Just migrates subscriptions from Server to Cloud with user mapping.
 from tableau_migration import (
     Migrator,
     MigrationPlanBuilder,
-    IUser,
-    ContentMappingBase
+    TableauCloudUsernameMappingBase
 )
 
 
@@ -42,7 +41,7 @@ DEFAULT_DOMAIN = "@company.com"
 # USERNAME MAPPING CLASS
 # =============================================================================
 
-class SimpleUsernameMapping(ContentMappingBase):
+class SimpleUsernameMapping(TableauCloudUsernameMappingBase):
     """Maps Server usernames to Cloud emails."""
 
     def map(self, ctx):
@@ -55,8 +54,7 @@ class SimpleUsernameMapping(ContentMappingBase):
         Returns:
             Mapped context with new username (email)
         """
-        user = ctx.content_item
-        username = user.name
+        username = ctx.content_item.name
 
         # Already an email? Return as-is
         if "@" in username:
@@ -66,14 +64,14 @@ class SimpleUsernameMapping(ContentMappingBase):
         if username in globals()['USER_MAPPINGS']:
             email = globals()['USER_MAPPINGS'][username]
             print(f"👤 Mapping: {username} → {email}")
-            # Use location.with_username() to create new location
-            return ctx.map_to(user.location.with_username(email))
+            # Return mapped email directly
+            return ctx.map_to(email)
 
         # Default: append domain (access global)
         email = f"{username}{globals()['DEFAULT_DOMAIN']}"
         print(f"👤 Default: {username} → {email}")
-        # Use location.with_username() to create new location
-        return ctx.map_to(user.location.with_username(email))
+        # Return mapped email directly
+        return ctx.map_to(email)
 
 
 # =============================================================================
@@ -109,10 +107,8 @@ def migrate_subscriptions():
         )
         .for_server_to_cloud()
         .with_tableau_id_authentication_type()
+        .with_tableau_cloud_usernames(lambda ctx: SimpleUsernameMapping().map(ctx))
     )
-
-    # Register username mapping
-    plan_builder.mappings.add(SimpleUsernameMapping, IUser)
 
     # Build and execute
     print("Building migration plan...")
