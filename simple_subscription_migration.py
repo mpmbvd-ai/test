@@ -45,7 +45,7 @@ DEFAULT_DOMAIN = "@company.com"
 class SimpleUsernameMapping:
     """Maps Server usernames to Cloud emails."""
 
-    def map(self, ctx: ContentMappingContext[IUser]) -> ContentMappingContext[IUser]:
+    def map(self, ctx):
         """
         Called for each user during migration.
 
