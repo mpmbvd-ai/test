@@ -1,10 +1,13 @@
 """
 Simple Subscription Migration - Single File
-Just migrates subscriptions from Server to Cloud with user mapping.
+Based on actual Tableau Migration SDK Python example.
 """
 
 import asyncio
-from tableau_migration import MigrationPlanBuilder
+from tableau_migration import (
+    Migrator,
+    MigrationPlanBuilder
+)
 
 
 # =============================================================================
@@ -24,25 +27,24 @@ DEST_TOKEN_NAME = "your-cloud-token-name"
 DEST_TOKEN = "your-cloud-token-secret"
 
 # USER MAPPINGS - Server username → Cloud email
-# If Server username is not in this dict, it will append @DOMAIN
 USER_MAPPINGS = {
     "jsmith": "john.smith@company.com",
     "ajones": "alice.jones@company.com",
     # Add more users here...
 }
 
-# Email domain to append for users not in USER_MAPPINGS
+# Default email domain
 EMAIL_DOMAIN = "@company.com"
 
 
 # =============================================================================
-# CUSTOM USERNAME MAPPING
+# USERNAME MAPPING CLASS
 # =============================================================================
 
-class CustomUsernameMapping:
+class SimpleUsernameMapping:
     """Maps Server usernames to Cloud emails."""
 
-    def __call__(self, username):
+    def __call__(self, username: str) -> str:
         """
         Called for each username during migration.
 
@@ -72,12 +74,15 @@ class CustomUsernameMapping:
 # MIGRATION
 # =============================================================================
 
-async def migrate_subscriptions():
+def migrate_subscriptions():
     """Migrate subscriptions from Server to Cloud."""
 
     print("Starting subscription migration...")
     print(f"Source: {SOURCE_SERVER_URL} / {SOURCE_SITE if SOURCE_SITE else 'Default'}")
     print(f"Destination: {DEST_CLOUD_URL} / {DEST_SITE}\n")
+
+    # Create migrator
+    migration = Migrator()
 
     # Build plan
     plan_builder = MigrationPlanBuilder()
@@ -96,22 +101,23 @@ async def migrate_subscriptions():
             access_token_name=DEST_TOKEN_NAME,
             access_token=DEST_TOKEN
         )
-        # Use built-in Cloud username mapping with custom logic
-        .with_tableau_cloud_usernames(CustomUsernameMapping())
+        .for_server_to_cloud()
+        .with_tableau_id_authentication_type()
+        .with_tableau_cloud_usernames(SimpleUsernameMapping)  # Pass class, not instance
     )
 
-    # Execute
+    # Build and execute
     print("Building migration plan...")
     plan = plan_builder.build()
 
     print("Starting migration (this may take a while)...\n")
-    result = await plan.execute_async()
+    result = migration.execute(plan)
 
     # Results
     print("\n" + "="*50)
-    if result.status.value == "Completed":
+    if result.status.name == "Completed":
         print("✅ Migration completed!")
-        print(f"   Check your Cloud site for migrated subscriptions")
+        print(f"   Check your Cloud site for migrated content")
     else:
         print(f"❌ Migration failed: {result.status}")
         if hasattr(result, 'errors') and result.errors:
@@ -121,4 +127,4 @@ async def migrate_subscriptions():
 
 
 if __name__ == "__main__":
-    asyncio.run(migrate_subscriptions())
+    migrate_subscriptions()
