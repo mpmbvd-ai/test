@@ -65,12 +65,16 @@ class SimpleUsernameMapping(TableauCloudUsernameMappingBase):
         if username in globals()['USER_MAPPINGS']:
             email = globals()['USER_MAPPINGS'][username]
             print(f"👤 Mapping: {username} → {email}")
-            return ctx.map_to(ctx.content_item.location.with_username(email))
+            # Access .NET WithUsername method directly (PascalCase)
+            new_location = ctx.content_item.location._dotnet.WithUsername(email)
+            return ctx.map_to(new_location)
 
         # Default: append domain (access global)
         email = f"{username}{globals()['DEFAULT_DOMAIN']}"
         print(f"👤 Default: {username} → {email}")
-        return ctx.map_to(ctx.content_item.location.with_username(email))
+        # Access .NET WithUsername method directly (PascalCase)
+        new_location = ctx.content_item.location._dotnet.WithUsername(email)
+        return ctx.map_to(new_location)
 
 
 # =============================================================================
