@@ -6,9 +6,9 @@ Just migrates subscriptions from Server to Cloud with user mapping.
 from tableau_migration import (
     Migrator,
     MigrationPlanBuilder,
-    PyUser
+    IUser
 )
-from tableau_migration.migration_engine_hooks_mappings import PyContentMappingContext
+from tableau_migration.migration_engine_hooks_mappings import ContentMappingContext
 
 
 # =============================================================================
@@ -45,7 +45,7 @@ DEFAULT_DOMAIN = "@company.com"
 class SimpleUsernameMapping:
     """Maps Server usernames to Cloud emails."""
 
-    def map(self, ctx: PyContentMappingContext[PyUser]) -> PyContentMappingContext[PyUser]:
+    def map(self, ctx: ContentMappingContext[IUser]) -> ContentMappingContext[IUser]:
         """
         Called for each user during migration.
 
