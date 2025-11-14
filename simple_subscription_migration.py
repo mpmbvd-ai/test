@@ -1,13 +1,11 @@
 """
 Simple Subscription Migration - Single File
-Just migrates subscriptions from Server to Cloud with user mapping.
+Just migrates subscriptions from Server to Cloud - NO MAPPING.
 """
 
 from tableau_migration import (
     Migrator,
-    MigrationPlanBuilder,
-    TableauCloudUsernameMappingBase,
-    ContentLocation
+    MigrationPlanBuilder
 )
 
 
@@ -26,55 +24,6 @@ DEST_CLOUD_URL = "https://10ax.online.tableau.com"  # Change pod: 10ax, 10ay, et
 DEST_SITE = "your-cloud-site"
 DEST_TOKEN_NAME = "your-cloud-token-name"
 DEST_TOKEN = "your-cloud-token-secret"
-
-# USER MAPPINGS - Server username → Cloud email
-USER_MAPPINGS = {
-    "jsmith": "john.smith@company.com",
-    "ajones": "alice.jones@company.com",
-    # Add more users here...
-}
-
-# Default email domain
-DEFAULT_DOMAIN = "@company.com"
-
-
-# =============================================================================
-# USERNAME MAPPING CLASS
-# =============================================================================
-
-class SimpleUsernameMapping(TableauCloudUsernameMappingBase):
-    """Maps Server usernames to Cloud emails."""
-
-    def map(self, ctx):
-        """
-        Called for each user during migration.
-
-        Args:
-            ctx: The mapping context containing the user
-
-        Returns:
-            Mapped context with new username (email)
-        """
-        username = ctx.content_item.name
-
-        # Already an email? Return as-is
-        if "@" in username:
-            return ctx
-
-        # Check mapping dict (access global)
-        if username in globals()['USER_MAPPINGS']:
-            email = globals()['USER_MAPPINGS'][username]
-            print(f"👤 Mapping: {username} → {email}")
-            # Create new ContentLocation with just the email
-            new_location = ContentLocation([email])
-            return ctx.map_to(new_location)
-
-        # Default: append domain (access global)
-        email = f"{username}{globals()['DEFAULT_DOMAIN']}"
-        print(f"👤 Default: {username} → {email}")
-        # Create new ContentLocation with just the email
-        new_location = ContentLocation([email])
-        return ctx.map_to(new_location)
 
 
 # =============================================================================
@@ -110,7 +59,6 @@ def migrate_subscriptions():
         )
         .for_server_to_cloud()
         .with_tableau_id_authentication_type()
-        .with_tableau_cloud_usernames(lambda ctx: SimpleUsernameMapping().map(ctx))
     )
 
     # Build and execute
