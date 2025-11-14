@@ -7,6 +7,7 @@ from tableau_migration import (
     Migrator,
     MigrationPlanBuilder,
     TableauCloudUsernameMappingBase,
+    ContentFilterBase,
     IUser,
     IWorkbook,
     IDataSource,
@@ -57,7 +58,7 @@ class SimpleUsernameMapping(TableauCloudUsernameMappingBase):
 # FILTERS - Control what content actually gets migrated
 # =============================================================================
 
-class SkipUserMigration:
+class SkipUserMigration(ContentFilterBase):
     """Don't migrate users - they should already exist in Cloud."""
 
     def should_migrate(self, ctx):
@@ -65,7 +66,7 @@ class SkipUserMigration:
         return False  # Don't migrate users
 
 
-class SkipProjectMigration:
+class SkipProjectMigration(ContentFilterBase):
     """Don't migrate projects - they should already exist in Cloud."""
 
     def should_migrate(self, ctx):
@@ -73,7 +74,7 @@ class SkipProjectMigration:
         return False  # Don't migrate projects
 
 
-class SkipDataSourceMigration:
+class SkipDataSourceMigration(ContentFilterBase):
     """Don't migrate data sources - they should already exist in Cloud."""
 
     def should_migrate(self, ctx):
@@ -81,7 +82,7 @@ class SkipDataSourceMigration:
         return False  # Don't migrate data sources
 
 
-class SkipWorkbookMigration:
+class SkipWorkbookMigration(ContentFilterBase):
     """Don't migrate workbooks - they should already exist in Cloud."""
 
     def should_migrate(self, ctx):
