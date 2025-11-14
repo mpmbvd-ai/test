@@ -1,11 +1,12 @@
 """
 Simple Subscription Migration - Single File
-Just migrates subscriptions from Server to Cloud - NO MAPPING.
+Migrates subscriptions from Server to Cloud with simple username mapping.
 """
 
 from tableau_migration import (
     Migrator,
-    MigrationPlanBuilder
+    MigrationPlanBuilder,
+    TableauCloudUsernameMappingBase
 )
 
 
@@ -24,6 +25,28 @@ DEST_CLOUD_URL = "https://10ax.online.tableau.com"  # Change pod: 10ax, 10ay, et
 DEST_SITE = "your-cloud-site"
 DEST_TOKEN_NAME = "your-cloud-token-name"
 DEST_TOKEN = "your-cloud-token-secret"
+
+
+# =============================================================================
+# USERNAME MAPPING - Just append @keyrus.com
+# =============================================================================
+
+class SimpleUsernameMapping(TableauCloudUsernameMappingBase):
+    """Append @keyrus.com to Server usernames."""
+
+    def map(self, ctx):
+        username = ctx.content_item.name
+
+        # Already an email? Return as-is
+        if "@" in username:
+            return ctx
+
+        # Append @keyrus.com
+        email = f"{username}@keyrus.com"
+        print(f"👤 Mapping: {username} → {email}")
+
+        # Return the mapped context - let the base class handle it
+        return ctx.map_to(email)
 
 
 # =============================================================================
@@ -59,6 +82,7 @@ def migrate_subscriptions():
         )
         .for_server_to_cloud()
         .with_tableau_id_authentication_type()
+        .with_tableau_cloud_usernames(lambda ctx: SimpleUsernameMapping().map(ctx))
     )
 
     # Build and execute
