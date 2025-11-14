@@ -3,6 +3,7 @@ Simple Subscription Migration - Single File
 ONLY migrates subscriptions - skips users and workbooks (assumes they exist in Cloud).
 """
 
+import logging
 from tableau_migration import (
     Migrator,
     MigrationPlanBuilder,
@@ -13,6 +14,17 @@ from tableau_migration import (
     IDataSource,
     IProject
 )
+
+# Configure logging to reduce verbose SDK output
+logging.basicConfig(
+    level=logging.WARNING,  # Only show WARNING and ERROR from SDK
+    format='%(levelname)s: %(message)s'
+)
+
+# Silence the most verbose loggers
+logging.getLogger('System.Net.Http.HttpClient').setLevel(logging.ERROR)
+logging.getLogger('Tableau.Migration').setLevel(logging.WARNING)
+logging.getLogger('Polly').setLevel(logging.ERROR)
 
 
 # =============================================================================
