@@ -58,35 +58,35 @@ class SimpleUsernameMapping(TableauCloudUsernameMappingBase):
 # FILTERS - Control what content actually gets migrated
 # =============================================================================
 
-class SkipUserMigration(ContentFilterBase):
+class SkipUserMigration(ContentFilterBase[IUser]):
     """Don't migrate users - they should already exist in Cloud."""
 
-    def should_migrate(self, ctx):
-        print(f"⏭️  Skipping user: {ctx.item.name}")
+    def should_migrate(self, item):
+        print(f"⏭️  Skipping user: {item.source_item.name}")
         return False  # Don't migrate users
 
 
-class SkipProjectMigration(ContentFilterBase):
+class SkipProjectMigration(ContentFilterBase[IProject]):
     """Don't migrate projects - they should already exist in Cloud."""
 
-    def should_migrate(self, ctx):
-        print(f"⏭️  Skipping project: {ctx.item.name}")
+    def should_migrate(self, item):
+        print(f"⏭️  Skipping project: {item.source_item.name}")
         return False  # Don't migrate projects
 
 
-class SkipDataSourceMigration(ContentFilterBase):
+class SkipDataSourceMigration(ContentFilterBase[IDataSource]):
     """Don't migrate data sources - they should already exist in Cloud."""
 
-    def should_migrate(self, ctx):
-        print(f"⏭️  Skipping data source: {ctx.item.name}")
+    def should_migrate(self, item):
+        print(f"⏭️  Skipping data source: {item.source_item.name}")
         return False  # Don't migrate data sources
 
 
-class SkipWorkbookMigration(ContentFilterBase):
+class SkipWorkbookMigration(ContentFilterBase[IWorkbook]):
     """Don't migrate workbooks - they should already exist in Cloud."""
 
-    def should_migrate(self, ctx):
-        print(f"⏭️  Skipping workbook: {ctx.item.name}")
+    def should_migrate(self, item):
+        print(f"⏭️  Skipping workbook: {item.source_item.name}")
         return False  # Don't migrate workbooks
 
 
@@ -129,10 +129,10 @@ def migrate_subscriptions():
     # Add filters to skip migrating users, projects, data sources, and workbooks
     # Only subscriptions will be migrated
     print("Configuring filters to skip user/workbook migration...")
-    plan_builder.filters.add(SkipUserMigration, IUser)
-    plan_builder.filters.add(SkipProjectMigration, IProject)
-    plan_builder.filters.add(SkipDataSourceMigration, IDataSource)
-    plan_builder.filters.add(SkipWorkbookMigration, IWorkbook)
+    plan_builder.filters.add(SkipUserMigration)
+    plan_builder.filters.add(SkipProjectMigration)
+    plan_builder.filters.add(SkipDataSourceMigration)
+    plan_builder.filters.add(SkipWorkbookMigration)
 
     # Build and execute
     print("Building migration plan...")
