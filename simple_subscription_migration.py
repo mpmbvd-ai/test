@@ -15,16 +15,22 @@ from tableau_migration import (
     IProject
 )
 
-# Configure logging to reduce verbose SDK output
+# Configure logging to reduce verbose SDK output - be very aggressive
 logging.basicConfig(
-    level=logging.WARNING,  # Only show WARNING and ERROR from SDK
-    format='%(levelname)s: %(message)s'
+    level=logging.CRITICAL,  # Only show CRITICAL errors
+    format='%(message)s'
 )
 
-# Silence the most verbose loggers
-logging.getLogger('System.Net.Http.HttpClient').setLevel(logging.ERROR)
-logging.getLogger('Tableau.Migration').setLevel(logging.WARNING)
-logging.getLogger('Polly').setLevel(logging.ERROR)
+# Silence all the verbose .NET SDK loggers completely
+logging.getLogger('System.Net.Http.HttpClient.DefaultHttpClient.LogicalHandler').setLevel(logging.CRITICAL)
+logging.getLogger('System.Net.Http.HttpClient.DefaultHttpClient.ClientHandler').setLevel(logging.CRITICAL)
+logging.getLogger('Tableau.Migration.Net.Logging.HttpActivityLogger').setLevel(logging.CRITICAL)
+logging.getLogger('Tableau.Migration.Engine.Conversion.Schedules.ServerToCloudScheduleConverter').setLevel(logging.CRITICAL)
+logging.getLogger('Tableau.Migration.Engine.Hooks.Transformers').setLevel(logging.CRITICAL)
+logging.getLogger('Tableau.Migration.Engine').setLevel(logging.CRITICAL)
+logging.getLogger('Polly').setLevel(logging.CRITICAL)
+logging.getLogger('System.Net.Http.HttpClient').setLevel(logging.CRITICAL)
+logging.getLogger('Tableau.Migration').setLevel(logging.CRITICAL)
 
 
 # =============================================================================
