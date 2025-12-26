@@ -36,6 +36,7 @@ env/
 # Environment files
 .env
 config.json
+user_mappings.csv
 
 # OS
 .DS_Store
