@@ -1,8 +1,13 @@
 """
 Simple Subscription Migration - Single File
 ONLY migrates subscriptions - skips users and workbooks (assumes they exist in Cloud).
+
+Usage:
+    python simple_subscription_migration.py              # Run the migration
+    python simple_subscription_migration.py --dry-run    # Preview without migrating
 """
 
+import argparse
 import sys
 import os
 
@@ -17,6 +22,7 @@ from migration_utils import (
     configure_logging,
     load_config,
     validate_config,
+    print_dry_run_report,
     EmailDomainMapping,
     SkipUserMigration,
     SkipProjectMigration,
@@ -31,7 +37,7 @@ configure_logging()
 # MIGRATION
 # =============================================================================
 
-def migrate_subscriptions():
+def migrate_subscriptions(dry_run=False):
     """Migrate subscriptions from Server to Cloud."""
 
     # Load config from repo root
@@ -41,6 +47,10 @@ def migrate_subscriptions():
     )
     config = load_config(config_path)
     if not config or not validate_config(config):
+        return
+
+    if dry_run:
+        print_dry_run_report(config)
         return
 
     email_domain = config['default_email_domain']
@@ -106,4 +116,7 @@ def migrate_subscriptions():
 
 
 if __name__ == "__main__":
-    migrate_subscriptions()
+    parser = argparse.ArgumentParser(description="Migrate subscriptions from Tableau Server to Cloud.")
+    parser.add_argument("--dry-run", action="store_true", help="Preview migration without executing.")
+    args = parser.parse_args()
+    migrate_subscriptions(dry_run=args.dry_run)

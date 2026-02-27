@@ -2,7 +2,13 @@
 Content Migration - Data Sources and Workbooks
 Migrates workbooks and data sources (including custom views).
 Skips users, projects, and subscriptions (handled by separate script).
+
+Usage:
+    python content_migration.py              # Run the migration
+    python content_migration.py --dry-run    # Preview without migrating
 """
+
+import argparse
 
 from tableau_migration import (
     Migrator,
@@ -13,6 +19,7 @@ from migration_utils import (
     load_config,
     validate_config,
     get_migration_scope,
+    print_dry_run_report,
     EmailDomainMapping,
     SkipUserMigration,
     SkipGroupMigration,
@@ -28,12 +35,16 @@ configure_logging()
 # MIGRATION
 # =============================================================================
 
-def migrate_content():
+def migrate_content(dry_run=False):
     """Migrate data sources and workbooks from Server to Cloud."""
 
     # Load and validate configuration
     config = load_config()
     if not config or not validate_config(config):
+        return
+
+    if dry_run:
+        print_dry_run_report(config)
         return
 
     # Get config values
@@ -122,4 +133,7 @@ def migrate_content():
 
 
 if __name__ == "__main__":
-    migrate_content()
+    parser = argparse.ArgumentParser(description="Migrate content from Tableau Server to Cloud.")
+    parser.add_argument("--dry-run", action="store_true", help="Preview migration without executing.")
+    args = parser.parse_args()
+    migrate_content(dry_run=args.dry_run)

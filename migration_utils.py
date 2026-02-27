@@ -181,6 +181,101 @@ class SkipWorkbookMigration(ContentFilterBase[IWorkbook]):
 
 
 # =============================================================================
+# DRY-RUN REPORT - Preview migration without executing
+# =============================================================================
+
+# Sample usernames used to preview email mapping behavior
+SAMPLE_USERNAMES = ["jsmith", "alice.jones", "bob@existing.com", "admin"]
+
+
+def print_dry_run_report(config):
+    """
+    Print a pre-migration validation report.
+
+    Shows configuration, migration scope, email mapping preview,
+    and connectivity info — everything that would happen during
+    migration, without actually migrating anything.
+    """
+    scope = get_migration_scope(config)
+    email_domain = config.get('default_email_domain', '')
+    default_owner = config.get('default_content_owner', '')
+
+    print()
+    print("=" * 60)
+    print("  DRY-RUN REPORT")
+    print("=" * 60)
+
+    # 1. Connection info
+    print("\n1. CONNECTION INFO")
+    print("-" * 40)
+    src = config.get('source', {})
+    dst = config.get('destination', {})
+    print(f"   Source:      {src.get('server_url', '?')}")
+    print(f"   Source site: {src.get('site_content_url') or 'Default'}")
+    print(f"   Dest:        {dst.get('pod_url', '?')}")
+    print(f"   Dest site:   {dst.get('site_content_url', '?')}")
+    print(f"   Token (src): {src.get('access_token_name', '?')}")
+    print(f"   Token (dst): {dst.get('access_token_name', '?')}")
+
+    # 2. Ownership
+    print(f"\n2. CONTENT OWNERSHIP")
+    print("-" * 40)
+    print(f"   Default owner: {default_owner}")
+    print(f"   Email domain:  {email_domain}")
+
+    # 3. Migration scope
+    print(f"\n3. MIGRATION SCOPE")
+    print("-" * 40)
+    for content_type, will_migrate in scope.items():
+        label = content_type.replace('_', ' ').title()
+        status = "WILL MIGRATE" if will_migrate else "SKIP"
+        marker = ">>>" if will_migrate else "   "
+        print(f"   {marker} {label}: {status}")
+    print(f"       Users: SKIP (always)")
+    print(f"       Groups: SKIP (always)")
+    print(f"       Projects: SKIP (always)")
+
+    # 4. Email mapping preview
+    print(f"\n4. EMAIL MAPPING PREVIEW")
+    print("-" * 40)
+    for username in SAMPLE_USERNAMES:
+        mapped = preview_email_mapping(username, email_domain)
+        print(f"   {username:<30} -> {mapped}")
+
+    # 5. What would happen
+    items_to_migrate = [k for k, v in scope.items() if v]
+    items_to_skip = [k for k, v in scope.items() if not v]
+
+    print(f"\n5. SUMMARY")
+    print("-" * 40)
+    if items_to_migrate:
+        print(f"   Will migrate: {', '.join(t.replace('_', ' ') for t in items_to_migrate)}")
+    else:
+        print(f"   Will migrate: (nothing)")
+    skipped = [t.replace('_', ' ') for t in items_to_skip]
+    skipped.extend(["users", "groups", "projects"])
+    print(f"   Will skip:    {', '.join(skipped)}")
+
+    print()
+    print("=" * 60)
+    print("  DRY RUN COMPLETE - no changes were made")
+    print("=" * 60)
+    print()
+
+
+def preview_email_mapping(username, email_domain):
+    """
+    Preview how a username would be mapped to a Cloud email.
+
+    Same logic as EmailDomainMapping.map() but without SDK context objects.
+    """
+    if "@" in username:
+        return username
+    domain = email_domain if email_domain.startswith('@') else f"@{email_domain}"
+    return f"{username}{domain}"
+
+
+# =============================================================================
 # USERNAME MAPPING - Map Server usernames to Cloud emails
 # =============================================================================
 
