@@ -10,10 +10,6 @@ Usage:
 
 import argparse
 
-from tableau_migration import (
-    Migrator,
-    MigrationPlanBuilder,
-)
 from migration_utils import (
     configure_logging,
     load_config,
@@ -46,6 +42,9 @@ def migrate_content(dry_run=False):
     if dry_run:
         print_dry_run_report(config)
         return
+
+    # SDK imports deferred so --dry-run works without tableau_migration installed
+    from tableau_migration import Migrator, MigrationPlanBuilder
 
     # Get config values
     default_owner = config.get('default_content_owner', '')

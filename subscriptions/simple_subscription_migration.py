@@ -14,10 +14,6 @@ import os
 # Add parent directory to path so we can import migration_utils from repo root
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tableau_migration import (
-    Migrator,
-    MigrationPlanBuilder,
-)
 from migration_utils import (
     configure_logging,
     load_config,
@@ -52,6 +48,9 @@ def migrate_subscriptions(dry_run=False):
     if dry_run:
         print_dry_run_report(config)
         return
+
+    # SDK imports deferred so --dry-run works without tableau_migration installed
+    from tableau_migration import Migrator, MigrationPlanBuilder
 
     email_domain = config['default_email_domain']
 
