@@ -97,12 +97,22 @@ class WorkbookViewAnalyzer(ContentTransformerBase[IPublishableWorkbook]):
     The SDK downloads the workbook, giving us access to full view information.
     """
 
+    # Class-level storage for results (shared across all instances)
+    workbooks_analyzed = []
+    total_views = 0
+    total_hidden = 0
+    total_visible = 0
+
     def __init__(self):
         super().__init__()
-        self.workbooks_analyzed = []
-        self.total_views = 0
-        self.total_hidden = 0
-        self.total_visible = 0
+
+    @classmethod
+    def reset(cls):
+        """Reset class-level statistics before a new analysis."""
+        cls.workbooks_analyzed = []
+        cls.total_views = 0
+        cls.total_hidden = 0
+        cls.total_visible = 0
 
     def transform(self, item: IPublishableWorkbook) -> IPublishableWorkbook:
         """Process each workbook and log its view information."""
@@ -122,9 +132,9 @@ class WorkbookViewAnalyzer(ContentTransformerBase[IPublishableWorkbook]):
                 visible_views.append(view.name)
 
         # Update statistics
-        self.total_views += len(all_views)
-        self.total_visible += len(visible_views)
-        self.total_hidden += len(hidden_views)
+        WorkbookViewAnalyzer.total_views += len(all_views)
+        WorkbookViewAnalyzer.total_visible += len(visible_views)
+        WorkbookViewAnalyzer.total_hidden += len(hidden_views)
 
         # Store workbook information
         workbook_info = {
@@ -135,7 +145,7 @@ class WorkbookViewAnalyzer(ContentTransformerBase[IPublishableWorkbook]):
             'visible_views': visible_views,
             'hidden_views': hidden_views
         }
-        self.workbooks_analyzed.append(workbook_info)
+        WorkbookViewAnalyzer.workbooks_analyzed.append(workbook_info)
 
         # Log the information
         print(f"\n📊 Workbook: {item.name}")
@@ -158,16 +168,17 @@ class WorkbookViewAnalyzer(ContentTransformerBase[IPublishableWorkbook]):
         # Return the item unchanged (though it won't be migrated due to filter)
         return item
 
-    def print_summary(self):
+    @classmethod
+    def print_summary(cls):
         """Print summary statistics."""
         print("\n" + "="*80)
         print("📊 SUMMARY")
         print("="*80)
-        print(f"Total Workbooks Analyzed: {len(self.workbooks_analyzed)}")
-        print(f"Total Views: {self.total_views}")
-        if self.total_views > 0:
-            print(f"  ✅ Visible Views: {self.total_visible} ({self.total_visible/self.total_views*100:.1f}%)")
-            print(f"  🔒 Hidden Views: {self.total_hidden} ({self.total_hidden/self.total_views*100:.1f}%)")
+        print(f"Total Workbooks Analyzed: {len(cls.workbooks_analyzed)}")
+        print(f"Total Views: {cls.total_views}")
+        if cls.total_views > 0:
+            print(f"  ✅ Visible Views: {cls.total_visible} ({cls.total_visible/cls.total_views*100:.1f}%)")
+            print(f"  🔒 Hidden Views: {cls.total_hidden} ({cls.total_hidden/cls.total_views*100:.1f}%)")
         else:
             print(f"  ✅ Visible Views: 0")
             print(f"  🔒 Hidden Views: 0")
@@ -215,8 +226,8 @@ def analyze_workbook_views():
     migration = Migrator()
     plan_builder = MigrationPlanBuilder()
 
-    # Create analyzer transformer
-    analyzer = WorkbookViewAnalyzer()
+    # Reset analyzer statistics
+    WorkbookViewAnalyzer.reset()
 
     # Configure plan
     plan_builder = (
@@ -245,7 +256,7 @@ def analyze_workbook_views():
     plan_builder.filters.add(SkipAllWorkbooks)  # Skip actual migration
 
     # Add transformer to analyze workbooks
-    plan_builder.transformers.add(lambda: analyzer)
+    plan_builder.transformers.add(WorkbookViewAnalyzer)
 
     # Build and execute
     print("🔍 Building analysis plan...")
@@ -257,7 +268,7 @@ def analyze_workbook_views():
     result = migration.execute(plan)
 
     # Print summary
-    analyzer.print_summary()
+    WorkbookViewAnalyzer.print_summary()
 
     # Print result status
     print(f"\n✅ Analysis complete - Status: {result.status.name}")

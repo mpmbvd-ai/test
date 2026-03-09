@@ -397,7 +397,7 @@ def migrate_content():
 
     # Add transformer to identify hidden views before each workbook is published
     print("Configuring workbook transformers...")
-    plan_builder.transformers.add(WorkbookHiddenViewsTransformer())
+    plan_builder.transformers.add(WorkbookHiddenViewsTransformer)
 
     # Build and execute
     print("Building migration plan...")
