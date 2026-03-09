@@ -316,15 +316,28 @@ class WorkbookHiddenViewsTransformer(ContentTransformerBase[IPublishableWorkbook
     to log which views will be hidden on the destination site.
     """
 
-    # Class-level counter for progress tracking
+    # Class-level storage for tracking across batches
     workbook_count = 0
+    processed_workbooks = set()  # Track which workbooks we've already analyzed
 
     @classmethod
     def reset_counter(cls):
-        """Reset the workbook counter."""
+        """Reset the workbook counter (but keep processed_workbooks for batch tracking)."""
         cls.workbook_count = 0
 
+    @classmethod
+    def reset_all(cls):
+        """Reset everything including processed workbooks list."""
+        cls.workbook_count = 0
+        cls.processed_workbooks = set()
+
     def transform(self, item: IPublishableWorkbook) -> IPublishableWorkbook:
+        # Skip if we've already processed this workbook
+        if item.name in WorkbookHiddenViewsTransformer.processed_workbooks:
+            return item
+
+        # Mark as processed
+        WorkbookHiddenViewsTransformer.processed_workbooks.add(item.name)
         WorkbookHiddenViewsTransformer.workbook_count += 1
 
         all_views = list(item.views) if item.views else []
@@ -436,16 +449,8 @@ def migrate_content():
     print("=" * 80)
     print()
 
-    # Create migrator
-    print("⚠️  Note: SDK may only process ~25-100 workbooks per execution due to")
-    print("   pagination limits. This is a known SDK limitation in v5.x")
-    print("   To analyze all workbooks, you may need to run multiple times or")
-    print("   upgrade to SDK v6.0 which may have better pagination support.\n")
-
-    migration = Migrator()
-
-    # Build plan
-    plan_builder = MigrationPlanBuilder()
+    # Reset all tracking for new analysis run
+    WorkbookHiddenViewsTransformer.reset_all()
 
     # Create content owner mapping — loads user_mappings.csv with default fallback
     csv_path = Path(__file__).parent / 'user_mappings.csv'
@@ -455,30 +460,10 @@ def migrate_content():
         destination_config=destination
     )
 
-    plan_builder = (
-        plan_builder
-        .from_source_tableau_server(
-            server_url=source['server_url'],
-            site_content_url=source.get('site_content_url', ''),
-            access_token_name=source['access_token_name'],
-            access_token=source['access_token']
-        )
-        .to_destination_tableau_cloud(
-            pod_url=destination['pod_url'],
-            site_content_url=destination['site_content_url'],
-            access_token_name=destination['access_token_name'],
-            access_token=destination['access_token']
-        )
-        .for_server_to_cloud()
-    )
+    print("📦 SDK v5.x processes workbooks in batches of ~25")
+    print("   Running multiple batches until all workbooks are analyzed...\n")
 
-    # Add filters to skip ALL migration (analysis only)
-    print("⚙️  Configuring analysis mode (all migration disabled)...")
-    plan_builder.filters.add(SkipUserMigration)
-    plan_builder.filters.add(SkipGroupMigration)
-    plan_builder.filters.add(SkipProjectMigration)
-
-    # Also skip workbooks and data sources from being migrated
+    # Define filter classes
     class SkipWorkbookMigration(ContentFilterBase[IPublishableWorkbook]):
         def should_migrate(self, item):
             return False
@@ -487,56 +472,104 @@ def migrate_content():
         def should_migrate(self, item):
             return False
 
-    # Skip large workbooks to avoid long downloads
     class SkipLargeWorkbooks(ContentFilterBase[IPublishableWorkbook]):
-        MAX_SIZE_MB = 50  # Lower threshold for faster analysis
-        MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024  # 52428800 bytes
+        MAX_SIZE_MB = 50
+        MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
 
         def should_migrate(self, item):
-            # Check if item has size attribute
             if hasattr(item, 'size') and item.size is not None:
                 size_mb = item.size / (1024 * 1024)
                 if item.size > self.MAX_SIZE_BYTES:
                     print(f"   ⏭️  Skipping large workbook: {item.name} ({size_mb:.1f} MB)")
                     return False
-            return True  # Process workbooks under 50MB or without size info
+            return True
 
-    plan_builder.filters.add(SkipLargeWorkbooks)
-    plan_builder.filters.add(SkipWorkbookMigration)
-    plan_builder.filters.add(SkipDataSourceMigration)
-
-    # Add transformer to analyze workbooks
-    print("⚙️  Adding workbook analyzer...")
-    WorkbookHiddenViewsTransformer.reset_counter()
-    plan_builder.transformers.add(WorkbookHiddenViewsTransformer)
-
-    # Build and execute
-    print("🔍 Building analysis plan...")
-    plan = plan_builder.build()
-
-    print("\n📥 Fetching workbook list from server...")
-    print("   (If this stops at 25, it's a pagination issue)")
-    print("   ⏭️  Skipping workbooks larger than 50MB")
-    print("   Press Ctrl+C to stop if needed\n")
+    # Run SDK in batches until all workbooks are processed
+    batch_number = 0
+    previous_count = 0
 
     try:
-        result = migration.execute(plan)
+        while True:
+            batch_number += 1
+            print(f"\n{'='*80}")
+            print(f"📦 BATCH {batch_number}")
+            print(f"{'='*80}")
 
-        # Show how many workbooks were actually found/processed
-        print(f"\n📊 Total workbooks found by SDK: {WorkbookHiddenViewsTransformer.workbook_count}")
+            # Create new migrator and plan for each batch
+            migration = Migrator()
+            plan_builder = MigrationPlanBuilder()
+
+            plan_builder = (
+                plan_builder
+                .from_source_tableau_server(
+                    server_url=source['server_url'],
+                    site_content_url=source.get('site_content_url', ''),
+                    access_token_name=source['access_token_name'],
+                    access_token=source['access_token']
+                )
+                .to_destination_tableau_cloud(
+                    pod_url=destination['pod_url'],
+                    site_content_url=destination['site_content_url'],
+                    access_token_name=destination['access_token_name'],
+                    access_token=destination['access_token']
+                )
+                .for_server_to_cloud()
+            )
+
+            # Add filters
+            print("⚙️  Configuring analysis mode...")
+            plan_builder.filters.add(SkipUserMigration)
+            plan_builder.filters.add(SkipGroupMigration)
+            plan_builder.filters.add(SkipProjectMigration)
+            plan_builder.filters.add(SkipLargeWorkbooks)
+            plan_builder.filters.add(SkipWorkbookMigration)
+            plan_builder.filters.add(SkipDataSourceMigration)
+
+            # Add transformer
+            plan_builder.transformers.add(WorkbookHiddenViewsTransformer)
+
+            # Build and execute
+            print("🔍 Building plan...")
+            plan = plan_builder.build()
+
+            print(f"📥 Processing workbooks (batch {batch_number})...\n")
+
+            result = migration.execute(plan)
+
+            # Check if we found any new workbooks in this batch
+            current_count = WorkbookHiddenViewsTransformer.workbook_count
+            new_in_batch = current_count - previous_count
+
+            print(f"\n📊 Batch {batch_number} complete: {new_in_batch} new workbook(s) analyzed")
+            print(f"   Total analyzed so far: {current_count}")
+
+            # If no new workbooks found, we're done
+            if new_in_batch == 0:
+                print(f"\n✅ No new workbooks found - analysis complete!")
+                break
+
+            previous_count = current_count
+
+            # Safety limit to prevent infinite loops
+            if batch_number >= 100:
+                print(f"\n⚠️  Reached maximum batch limit (100) - stopping")
+                break
+
     except KeyboardInterrupt:
         print("\n\n⚠️  Analysis interrupted by user")
-        print(f"   Processed {WorkbookHiddenViewsTransformer.workbook_count} workbook(s) before stopping\n")
+        print(f"   Processed {WorkbookHiddenViewsTransformer.workbook_count} workbook(s) across {batch_number} batch(es)\n")
         return
 
     # Show detailed mapping summary
     owner_mapping.print_summary()
 
-    # Results
+    # Final results
     print("\n" + "="*80)
-    print(f"✅ Analysis complete - Status: {result.status.name}")
-    if result.status.name != "Completed":
-        print(f"⚠️  Note: Status is {result.status.name}, but this is normal for analysis-only mode")
+    print("📊 FINAL ANALYSIS RESULTS")
+    print("="*80)
+    print(f"Total batches processed: {batch_number}")
+    print(f"Total workbooks analyzed: {WorkbookHiddenViewsTransformer.workbook_count}")
+    print(f"Workbooks skipped (>50MB): Check output above")
     print("="*80)
 
 
