@@ -114,14 +114,18 @@ class ContentOwnerMapping(TableauCloudUsernameMappingBase):
             return {}
 
         mappings = {}
+        print(f"\n📄 Loading user mappings from {csv_path}:")
         with open(path, 'r', encoding='utf-8') as f:
             for row in csv.DictReader(f):
                 username = row.get('ServerUsername', '').strip()
                 email = row.get('CloudEmail', '').strip()
                 if username and email:
                     mappings[username.lower()] = email
+                    print(f"   ✅ {username} → {email}")
+                elif username or email:
+                    print(f"   ⚠️  Skipped incomplete row: username='{username}', email='{email}'")
 
-        print(f"📄 Loaded {len(mappings)} user mappings from {csv_path}")
+        print(f"\n✅ Loaded {len(mappings)} user mapping(s)\n")
         return mappings
 
     def map(self, ctx):
