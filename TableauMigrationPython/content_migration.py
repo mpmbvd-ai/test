@@ -550,6 +550,9 @@ def migrate_content():
 
             previous_count = current_count
 
+            # Let user know we're continuing (not hung)
+            print(f"\n⏳ Preparing next batch... (SDK cleanup may take 30-60 seconds)")
+
             # Safety limit to prevent infinite loops
             if batch_number >= 100:
                 print(f"\n⚠️  Reached maximum batch limit (100) - stopping")
