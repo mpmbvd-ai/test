@@ -4,6 +4,9 @@
 # Core Tableau Migration SDK
 tableau-migration
 
+# Tableau REST API Client - for user verification
+tableauserverclient>=0.25
+
 # Credential Management
 python-dotenv>=1.0.0
 

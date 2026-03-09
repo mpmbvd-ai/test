@@ -111,26 +111,36 @@ class ContentOwnerMapping(TableauCloudUsernameMappingBase):
         super().__init__()
 
     def _get_cloud_users(self):
-        """Fetch list of existing users from Tableau Cloud."""
+        """Fetch list of existing users from Tableau Cloud via REST API."""
         if not self.destination_config:
             return set()
 
         try:
-            from tableau_migration import PyTableauCloudSite
+            import tableauserverclient as TSC
 
             print("🔍 Connecting to Tableau Cloud to verify users...")
 
-            site = PyTableauCloudSite(
-                pod_url=self.destination_config['pod_url'],
-                site_content_url=self.destination_config['site_content_url'],
-                access_token_name=self.destination_config['access_token_name'],
-                access_token=self.destination_config['access_token']
+            # Create authentication using Personal Access Token
+            tableau_auth = TSC.PersonalAccessTokenAuth(
+                token_name=self.destination_config['access_token_name'],
+                personal_access_token=self.destination_config['access_token'],
+                site_id=self.destination_config['site_content_url']
             )
 
-            users = site.users.get_all()
-            user_emails = {user.name.lower() for user in users if user.name}
-            print(f"✅ Found {len(user_emails)} users in Tableau Cloud\n")
-            return user_emails
+            # Connect to Tableau Cloud
+            server = TSC.Server(self.destination_config['pod_url'], use_server_version=True)
+
+            # Sign in and get users
+            with server.auth.sign_in(tableau_auth):
+                all_users = []
+                # Paginate through all users
+                for user in TSC.Pager(server.users):
+                    all_users.append(user)
+
+                # Extract usernames (which are emails in Tableau Cloud)
+                user_emails = {user.name.lower() for user in all_users if user.name}
+                print(f"✅ Found {len(user_emails)} users in Tableau Cloud\n")
+                return user_emails
 
         except Exception as e:
             print(f"⚠️  Could not verify Cloud users: {e}")
