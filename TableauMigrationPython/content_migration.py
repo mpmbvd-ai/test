@@ -118,6 +118,10 @@ class ContentOwnerMapping(TableauCloudUsernameMappingBase):
 
         try:
             import tableauserverclient as TSC
+            import warnings
+
+            # Completely disable TSC logging
+            logging.disable(logging.CRITICAL)
 
             print("🔍 Connecting to Tableau Cloud to verify users...")
 
@@ -140,8 +144,12 @@ class ContentOwnerMapping(TableauCloudUsernameMappingBase):
 
                 # Extract usernames (which are emails in Tableau Cloud)
                 user_emails = {user.name.lower() for user in all_users if user.name}
-                print(f"✅ Found {len(user_emails)} users in Tableau Cloud\n")
-                return user_emails
+
+            # Re-enable logging after TSC operations
+            logging.disable(logging.NOTSET)
+
+            print(f"✅ Found {len(user_emails)} users in Tableau Cloud\n")
+            return user_emails
 
         except Exception as e:
             print(f"⚠️  Could not verify Cloud users: {e}")
