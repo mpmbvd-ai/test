@@ -471,6 +471,21 @@ def migrate_content():
         def should_migrate(self, item):
             return False
 
+    # Skip large workbooks (over 100MB) to avoid long downloads
+    class SkipLargeWorkbooks(ContentFilterBase[IPublishableWorkbook]):
+        MAX_SIZE_MB = 100
+        MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024  # 104857600 bytes
+
+        def should_migrate(self, item):
+            # Check if item has size attribute
+            if hasattr(item, 'size') and item.size is not None:
+                size_mb = item.size / (1024 * 1024)
+                if item.size > self.MAX_SIZE_BYTES:
+                    print(f"   ⏭️  Skipping large workbook: {item.name} ({size_mb:.1f} MB)")
+                    return False
+            return True  # Process workbooks under 100MB or without size info
+
+    plan_builder.filters.add(SkipLargeWorkbooks)
     plan_builder.filters.add(SkipWorkbookMigration)
     plan_builder.filters.add(SkipDataSourceMigration)
 
@@ -485,7 +500,7 @@ def migrate_content():
 
     print("\n📥 Downloading and analyzing workbooks from source...")
     print("   (Workbooks will be downloaded but NOT migrated)")
-    print("   ⏱️  Large workbooks may take several minutes to download")
+    print("   ⏭️  Skipping workbooks larger than 100MB")
     print("   Press Ctrl+C to stop if needed\n")
 
     try:
