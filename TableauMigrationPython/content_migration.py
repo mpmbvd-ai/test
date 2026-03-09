@@ -437,6 +437,11 @@ def migrate_content():
     print()
 
     # Create migrator
+    print("⚠️  Note: SDK may only process ~25-100 workbooks per execution due to")
+    print("   pagination limits. This is a known SDK limitation in v5.x")
+    print("   To analyze all workbooks, you may need to run multiple times or")
+    print("   upgrade to SDK v6.0 which may have better pagination support.\n")
+
     migration = Migrator()
 
     # Build plan
