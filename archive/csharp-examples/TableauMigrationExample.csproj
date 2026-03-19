@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Tableau Migration SDK - Install with: dotnet add package Tableau.Migration -->
-    <!-- <PackageReference Include="Tableau.Migration" Version="*" /> -->
+    <!-- Tableau Migration SDK v6.0 - Install with: dotnet add package Tableau.Migration -->
+    <PackageReference Include="Tableau.Migration" Version="6.0.*" />
 
     <!-- CSV Helper for reading mapping files - Install with: dotnet add package CsvHelper -->
     <PackageReference Include="CsvHelper" Version="33.0.1" />

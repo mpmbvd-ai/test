@@ -1,6 +1,19 @@
-# Tableau Migration SDK - Code Examples
+# Tableau Migration SDK v6.0 - Code Examples
 
-This folder contains progressively complex examples showing how to use the Tableau Migration SDK, with a focus on **subscriptions** and **site/project mapping**.
+This folder contains progressively complex examples showing how to use **Tableau Migration SDK v6.0**, with a focus on **subscriptions** and **site/project mapping**.
+
+## 🆕 Using SDK v6.0
+
+**Important:** These examples use SDK v6.0 with the updated manifest API.
+
+**Key v6.0 Changes:**
+- ✅ Manifest queries: `manifest.Entries.ForContentType<IUser>()`
+- ✅ Improved type safety and error reporting
+- ✅ Streamlined plan builder API
+
+**See:** [V6_MIGRATION_GUIDE.md](../../../docs/V6_MIGRATION_GUIDE.md) for complete v6.0 documentation
+
+**Quick Reference:** [V6_QUICK_REFERENCE.md](../../../docs/V6_QUICK_REFERENCE.md)
 
 ---
 
