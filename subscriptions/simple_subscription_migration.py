@@ -282,7 +282,6 @@ class SkipUserMigration(ContentFilterBase[IUser]):
     """Don't migrate users - they should already exist in Cloud."""
 
     def should_migrate(self, item):
-        print(f"⏭️  Skipping user: {item.source_item.name}")
         return False  # Don't migrate users
 
 
@@ -290,7 +289,6 @@ class SkipProjectMigration(ContentFilterBase[IProject]):
     """Don't migrate projects - they should already exist in Cloud."""
 
     def should_migrate(self, item):
-        print(f"⏭️  Skipping project: {item.source_item.name}")
         return False  # Don't migrate projects
 
 
@@ -298,7 +296,6 @@ class SkipDataSourceMigration(ContentFilterBase[IDataSource]):
     """Don't migrate data sources - they should already exist in Cloud."""
 
     def should_migrate(self, item):
-        print(f"⏭️  Skipping data source: {item.source_item.name}")
         return False  # Don't migrate data sources
 
 
@@ -306,7 +303,6 @@ class SkipWorkbookMigration(ContentFilterBase[IWorkbook]):
     """Don't migrate workbooks - they should already exist in Cloud."""
 
     def should_migrate(self, item):
-        print(f"⏭️  Skipping workbook: {item.source_item.name}")
         return False  # Don't migrate workbooks
 
 
@@ -314,7 +310,6 @@ class SkipExtractRefreshTaskMigration(ContentFilterBase[IServerExtractRefreshTas
     """Don't migrate extract refresh tasks - only migrating subscriptions."""
 
     def should_migrate(self, item):
-        print(f"⏭️  Skipping extract refresh task: {item.source_item.id}")
         return False  # Don't migrate extract refresh tasks
 
 
@@ -322,7 +317,6 @@ class SkipCustomViewMigration(ContentFilterBase[ICustomView]):
     """Don't migrate custom views - only migrating subscriptions."""
 
     def should_migrate(self, item):
-        print(f"⏭️  Skipping custom view: {item.source_item.name}")
         return False  # Don't migrate custom views
 
 
@@ -402,21 +396,60 @@ def migrate_subscriptions():
     print("Starting migration (this may take a while)...\n")
     result = migration.execute(plan)
 
-    # Show detailed mapping summary
-    owner_mapping.print_summary()
-
     # Results
     print("\n" + "="*70)
     print("📊 MIGRATION RESULTS")
     print("="*70)
+
     if result.status.name == "Completed":
-        print("✅ Migration completed!")
-        print(f"   Check your Cloud site for migrated subscriptions")
+        print("✅ Migration completed successfully!\n")
+
+        # Display migrated subscriptions
+        try:
+            manifest = result.manifest
+            if hasattr(manifest, 'entries') and manifest.entries:
+                # Look for subscription entries
+                from tableau_migration import ISubscription
+                subscription_entries = [e for e in manifest.entries if e.source.content_type.name == 'Subscription']
+
+                if subscription_entries:
+                    print(f"📧 Migrated Subscriptions ({len(subscription_entries)}):")
+                    for entry in subscription_entries:
+                        # Get subscription details
+                        sub_id = entry.source.location.name if hasattr(entry.source, 'location') else str(entry.source.id)
+                        status = "✅" if entry.status.name == "Migrated" else "⚠️"
+                        print(f"   {status} Subscription ID: {sub_id}")
+
+                        # Show destination info if available
+                        if hasattr(entry, 'destination') and entry.destination:
+                            dest_id = entry.destination.location.name if hasattr(entry.destination, 'location') else str(entry.destination.id)
+                            print(f"      → Cloud ID: {dest_id}")
+                else:
+                    print("⚠️  No subscriptions were migrated")
+            else:
+                print("✅ Migration completed - check your Cloud site for subscriptions")
+        except Exception as e:
+            print(f"✅ Migration completed")
+            print(f"⚠️  Could not retrieve subscription details: {str(e)}")
+            print(f"   Check your Cloud site to verify migrated subscriptions")
     else:
-        print(f"❌ Migration failed: {result.status}")
-        if hasattr(result, 'errors') and result.errors:
-            for error in result.errors:
-                print(f"   {error}")
+        print(f"❌ Migration failed with status: {result.status.name}\n")
+
+        # Show errors if available
+        if hasattr(result, 'manifest') and result.manifest:
+            try:
+                errors = [e for e in result.manifest.entries if e.status.name != "Migrated"]
+                if errors:
+                    print(f"Errors encountered ({len(errors)}):")
+                    for error_entry in errors[:10]:  # Show first 10 errors
+                        error_msg = error_entry.errors[0].message if error_entry.errors else "Unknown error"
+                        item_id = error_entry.source.location.name if hasattr(error_entry.source, 'location') else "Unknown"
+                        print(f"   • {item_id}: {error_msg}")
+                    if len(errors) > 10:
+                        print(f"   ... and {len(errors) - 10} more errors")
+            except Exception as e:
+                print(f"Could not parse error details: {str(e)}")
+
     print("="*70)
 
 
