@@ -6,8 +6,6 @@ Usage:
     python view_retrieval.py --project "My Project"
     python view_retrieval.py --workbook "My Workbook"
     python view_retrieval.py --output views.csv
-    python view_retrieval.py --images ./images
-    python view_retrieval.py --workbook "Sales Dashboard" --images ./images
 
 Requires:
     pip install tableauserverclient
@@ -25,6 +23,8 @@ SERVER_URL = "https://your-tableau-server.com"
 SITE_CONTENT_URL = ""                # leave empty string for Default site
 ACCESS_TOKEN_NAME = "your-token-name"
 ACCESS_TOKEN = "your-token-secret"
+# -- Output --------------------------------------------------------------------
+IMAGE_OUTPUT_DIR = r"C:\path\to\your\output\images"  # PNGs saved here
 # ------------------------------------------------------------------------------
 
 
@@ -59,7 +59,7 @@ def get_all_views(
             'project_name': view.project_name if hasattr(view, 'project_name') else '',
             'created_at': str(view.created_at) if view.created_at else '',
             'updated_at': str(view.updated_at) if view.updated_at else '',
-            '_view_item': view,  # keep reference for image download
+            '_view_item': view,
         }
 
         if project_name and row['project_name'] != project_name:
@@ -78,12 +78,12 @@ def get_all_views(
     return results
 
 
-def download_images(server: TSC.Server, views: list[dict], output_dir: str) -> None:
+def download_images(server: TSC.Server, views: list[dict]) -> None:
     """
-    Download a PNG image for each view and save to output_dir.
-    Files are named <view_name>.png (special characters replaced with underscores).
+    Download a high-res PNG for each view and save to IMAGE_OUTPUT_DIR.
+    Files are named <view_name>.png.
     """
-    out = Path(output_dir)
+    out = Path(IMAGE_OUTPUT_DIR)
     out.mkdir(parents=True, exist_ok=True)
 
     image_req = TSC.ImageRequestOptions(imageresolution=TSC.ImageRequestOptions.Resolution.High)
@@ -131,7 +131,6 @@ def main():
     parser.add_argument('--project', default=None, help='Filter by project name')
     parser.add_argument('--workbook', default=None, help='Filter by workbook name')
     parser.add_argument('--output', default=None, help='Save metadata to CSV file')
-    parser.add_argument('--images', default=None, metavar='DIR', help='Download view images as PNGs to this directory')
     args = parser.parse_args()
 
     print(f"Connecting to {SERVER_URL} ...")
@@ -143,9 +142,8 @@ def main():
         if args.output:
             save_to_csv(views, args.output)
 
-        if args.images:
-            print(f"\nDownloading images to '{args.images}' ...")
-            download_images(server, views, args.images)
+        print(f"\nDownloading images to '{IMAGE_OUTPUT_DIR}' ...")
+        download_images(server, views)
     finally:
         server.auth.sign_out()
         print("\nSigned out.")
