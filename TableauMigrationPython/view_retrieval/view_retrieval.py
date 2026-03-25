@@ -1,10 +1,10 @@
 """
 View Retrieval using Tableau Server Client (TSC)
 
+Retrieves all views from a specific workbook and downloads them as PNGs.
+
 Usage:
     python view_retrieval.py
-    python view_retrieval.py --project "My Project"
-    python view_retrieval.py --workbook "My Workbook"
     python view_retrieval.py --output views.csv
 
 Requires:
@@ -23,13 +23,14 @@ SERVER_URL = "https://your-tableau-server.com"
 SITE_CONTENT_URL = ""                # leave empty string for Default site
 ACCESS_TOKEN_NAME = "your-token-name"
 ACCESS_TOKEN = "your-token-secret"
+# -- Target workbook -----------------------------------------------------------
+WORKBOOK_NAME = "Your Workbook Name"  # exact name as it appears in Tableau
 # -- Output --------------------------------------------------------------------
-IMAGE_OUTPUT_DIR = r"C:\path\to\your\output\images"  # PNGs saved here
+IMAGE_OUTPUT_DIR = r"C:\path\to\your\output\images"
 # ------------------------------------------------------------------------------
 
 
 def connect() -> TSC.Server:
-    """Sign in to Tableau Server and return an authenticated Server object."""
     tableau_auth = TSC.PersonalAccessTokenAuth(
         token_name=ACCESS_TOKEN_NAME,
         personal_access_token=ACCESS_TOKEN,
@@ -40,110 +41,81 @@ def connect() -> TSC.Server:
     return server
 
 
-def get_all_views(
-    server: TSC.Server,
-    project_name: str = None,
-    workbook_name: str = None,
-) -> list[dict]:
-    req_options = TSC.RequestOptions(pagesize=1000)
-    all_views, _ = server.views.get(req_options)
+def get_workbook(server: TSC.Server) -> TSC.WorkbookItem:
+    """Find the target workbook by name. Raises if not found."""
+    req = TSC.RequestOptions(pagesize=1000)
+    req.filter.add(TSC.Filter(TSC.RequestOptions.Field.Name,
+                              TSC.RequestOptions.Operator.Equals,
+                              WORKBOOK_NAME))
+    workbooks, _ = server.workbooks.get(req)
 
-    results = []
-    for view in all_views:
-        row = {
-            'id': view.id,
-            'name': view.name,
-            'content_url': view.content_url,
-            'workbook_id': view.workbook_id,
-            'owner_id': view.owner_id,
-            'project_name': view.project_name if hasattr(view, 'project_name') else '',
-            'created_at': str(view.created_at) if view.created_at else '',
-            'updated_at': str(view.updated_at) if view.updated_at else '',
-            '_view_item': view,
-        }
+    if not workbooks:
+        raise ValueError(f"Workbook '{WORKBOOK_NAME}' not found on {SERVER_URL}")
 
-        if project_name and row['project_name'] != project_name:
-            continue
-
-        results.append(row)
-
-    if workbook_name:
-        wb_options = TSC.RequestOptions(pagesize=1000)
-        all_workbooks, _ = server.workbooks.get(wb_options)
-        matching_wb_ids = {
-            wb.id for wb in all_workbooks if wb.name == workbook_name
-        }
-        results = [r for r in results if r['workbook_id'] in matching_wb_ids]
-
-    return results
+    return workbooks[0]
 
 
-def download_images(server: TSC.Server, views: list[dict]) -> None:
-    """
-    Download a high-res PNG for each view and save to IMAGE_OUTPUT_DIR.
-    Files are named <view_name>.png.
-    """
+def get_views(server: TSC.Server, workbook: TSC.WorkbookItem) -> list:
+    """Get all views belonging to the workbook."""
+    server.workbooks.populate_views(workbook)
+    return workbook.views
+
+
+def download_images(server: TSC.Server, views: list) -> None:
+    """Download a high-res PNG for each view and save to IMAGE_OUTPUT_DIR."""
     out = Path(IMAGE_OUTPUT_DIR)
     out.mkdir(parents=True, exist_ok=True)
 
     image_req = TSC.ImageRequestOptions(imageresolution=TSC.ImageRequestOptions.Resolution.High)
 
-    for v in views:
-        view_item = v['_view_item']
+    for view in views:
         try:
-            server.views.populate_image(view_item, image_req)
-            safe_name = "".join(c if c.isalnum() or c in (' ', '-') else '_' for c in v['name']).strip()
+            server.views.populate_image(view, image_req)
+            safe_name = "".join(c if c.isalnum() or c in (' ', '-') else '_' for c in view.name).strip()
             file_path = out / f"{safe_name}.png"
-            file_path.write_bytes(view_item.image)
+            file_path.write_bytes(view.image)
             print(f"  Saved: {file_path}")
         except Exception as e:
-            print(f"  Failed to download image for '{v['name']}': {e}")
+            print(f"  Failed to download image for '{view.name}': {e}")
 
 
-def print_views(views: list[dict]) -> None:
-    if not views:
-        print("No views found.")
-        return
-
-    print(f"\nFound {len(views)} view(s):\n")
-    print(f"{'Name':<40} {'Project':<25} {'Content URL'}")
-    print("-" * 90)
-    for v in views:
-        print(f"{v['name']:<40} {v['project_name']:<25} {v['content_url']}")
-
-
-def save_to_csv(views: list[dict], output_path: str) -> None:
-    if not views:
-        print("Nothing to write.")
-        return
-
-    csv_fields = [k for k in views[0].keys() if k != '_view_item']
+def save_to_csv(views: list, output_path: str) -> None:
+    rows = [
+        {
+            'id': v.id,
+            'name': v.name,
+            'content_url': v.content_url,
+            'owner_id': v.owner_id,
+        }
+        for v in views
+    ]
     with open(output_path, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=csv_fields)
+        writer = csv.DictWriter(f, fieldnames=rows[0].keys())
         writer.writeheader()
-        writer.writerows({k: v[k] for k in csv_fields} for v in views)
-
-    print(f"Saved {len(views)} view(s) to {output_path}")
+        writer.writerows(rows)
+    print(f"Saved {len(rows)} view(s) to {output_path}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Retrieve views from Tableau Server')
-    parser.add_argument('--project', default=None, help='Filter by project name')
-    parser.add_argument('--workbook', default=None, help='Filter by workbook name')
-    parser.add_argument('--output', default=None, help='Save metadata to CSV file')
+    parser = argparse.ArgumentParser(description='Retrieve views from a Tableau workbook')
+    parser.add_argument('--output', default=None, help='Save view metadata to CSV file')
     args = parser.parse_args()
 
     print(f"Connecting to {SERVER_URL} ...")
     server = connect()
     try:
-        views = get_all_views(server, project_name=args.project, workbook_name=args.workbook)
-        print_views(views)
+        print(f"Looking for workbook '{WORKBOOK_NAME}' ...")
+        workbook = get_workbook(server)
+        print(f"Found workbook: {workbook.name} (id: {workbook.id})")
 
-        if args.output:
-            save_to_csv(views, args.output)
+        views = get_views(server, workbook)
+        print(f"Found {len(views)} view(s): {[v.name for v in views]}")
 
         print(f"\nDownloading images to '{IMAGE_OUTPUT_DIR}' ...")
         download_images(server, views)
+
+        if args.output:
+            save_to_csv(views, args.output)
     finally:
         server.auth.sign_out()
         print("\nSigned out.")
